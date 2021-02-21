@@ -1,3 +1,4 @@
+// @dart=2.9
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -13,12 +14,6 @@ class CircleColorPicker extends StatefulWidget {
     this.strokeWidth = 2,
     this.thumbSize = 32,
     this.initialColor = const Color.fromARGB(255, 255, 0, 0),
-    this.textStyle = const TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.bold,
-      color: Colors.black,
-    ),
-    this.colorCodeBuilder,
   }) : super(key: key);
 
   /// Called during a drag when the user is selecting a color.
@@ -49,17 +44,6 @@ class CircleColorPicker extends StatefulWidget {
   /// Default value is Red.
   final Color initialColor;
 
-  /// Text style config
-  ///
-  /// Default value is Black
-  final TextStyle textStyle;
-
-  /// Widget builder that show color code section.
-  /// This functions is called every time color changed.
-  ///
-  /// Default is Text widget that shows rgb strings;
-  final ColorCodeBuilder colorCodeBuilder;
-
   double get initialLightness => HSLColor.fromColor(initialColor).lightness;
 
   double get initialHue => HSLColor.fromColor(initialColor).hue;
@@ -74,13 +58,11 @@ class _CircleColorPickerState extends State<CircleColorPicker>
   AnimationController _hueController;
 
   Color get _color {
-    return HSLColor.fromAHSL(
-      1,
-      _hueController.value,
-      1,
-      _lightnessController.value,
-    ).toColor();
+    return HSVColor.fromAHSV(1, _hueController.value, 1, 1).toColor();
   }
+
+  bool isOff = false;
+  bool isWhite = false;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +77,7 @@ class _CircleColorPickerState extends State<CircleColorPicker>
             strokeWidth: widget.strokeWidth,
             thumbSize: widget.thumbSize,
             onChanged: (hue) {
+              this.isWhite = false;
               _hueController.value = hue * 180 / pi;
             },
           ),
@@ -108,38 +91,19 @@ class _CircleColorPickerState extends State<CircleColorPicker>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        widget.colorCodeBuilder != null
-                            ? widget.colorCodeBuilder(context, _color)
-                            : Text(
-                                '#${_color.value.toRadixString(16).substring(2)}',
-                                style: widget.textStyle,
-                              ),
                         const SizedBox(height: 16),
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: _color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              width: 3,
-                              color: HSLColor.fromColor(_color)
-                                  .withLightness(
-                                    _lightnessController.value * 4 / 5,
-                                  )
-                                  .toColor(),
+                        GestureDetector(
+                          onTap: () => _turnOnOff(),
+                          onLongPress: () => _turnOnOffWhite(),
+                          child: Container(
+                            width: 96,
+                            height: 96,
+                            decoration: BoxDecoration(
+                              color: this._selectColor(),
+                              shape: BoxShape.circle,
+                              border: Border.all(width: 1, color: Colors.black),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        _LightnessSlider(
-                          initialLightness: widget.initialLightness,
-                          width: 140,
-                          thumbSize: 26,
-                          hue: _hueController.value,
-                          onChanged: (lightness) {
-                            _lightnessController.value = lightness;
-                          },
                         ),
                       ],
                     ),
@@ -170,9 +134,33 @@ class _CircleColorPickerState extends State<CircleColorPicker>
     )..addListener(_onColorChanged);
   }
 
-  void _onColorChanged() {
-    widget.onChanged?.call(_color);
+  Color _selectColor() {
+    if (this.isOff) {
+      return Colors.black;
+    }
+    if (this.isWhite) {
+      return Colors.white;
+    }
+    return _color;
   }
+
+  void _onColorChanged() {
+    final color = this._selectColor();
+    widget.onChanged?.call(color);
+  }
+
+  void _turnOnOff() {
+    this.isOff = !this.isOff;
+    this.isWhite = false;
+    this._onColorChanged();
+  }
+
+  void _turnOnOffWhite() {
+    this.isWhite = this.isOff || !this.isWhite;
+    this.isOff = false;
+    this._onColorChanged();
+  }
+
 }
 
 class _LightnessSlider extends StatefulWidget {
