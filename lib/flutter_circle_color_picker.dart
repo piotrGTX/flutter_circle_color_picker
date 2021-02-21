@@ -101,7 +101,7 @@ class _CircleColorPickerState extends State<CircleColorPicker>
                             decoration: BoxDecoration(
                               color: this._selectColor(),
                               shape: BoxShape.circle,
-                              border: Border.all(width: 1, color: Colors.black),
+                              border: Border.all(width: 1, color: _selectBorderColor()),
                             ),
                           ),
                         ),
@@ -115,6 +115,14 @@ class _CircleColorPickerState extends State<CircleColorPicker>
         ],
       ),
     );
+  }
+
+  Color _selectBorderColor() {
+    if (this.isOff || this.isWhite) {
+      return _color;
+    } else {
+      return Colors.black;
+    }
   }
 
   @override
